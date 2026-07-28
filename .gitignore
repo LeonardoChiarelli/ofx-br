@@ -1,0 +1,26 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.eggs/
+
+.venv/
+venv/
+env/
+
+.pytest_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+
+.idea/
+.vscode/
+.DS_Store
+
+# Extrato real nunca entra no repositório. As fixtures versionadas em
+# tests/fixtures/ são sintéticas e geradas por tests/make_fixtures.py.
+/*.ofx
+/extratos/

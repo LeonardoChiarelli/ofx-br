@@ -1,0 +1,12 @@
+# Regra geral primeiro: em .gitattributes a ÚLTIMA regra que casa é a que vale,
+# então o que for específico precisa vir depois.
+* text=auto eol=lf
+*.py text eol=lf
+*.md text eol=lf
+*.toml text eol=lf
+*.yml text eol=lf
+
+# As fixtures .ofx são bytes exatos: cp1252 com quebra CRLF, que é o que os
+# bancos emitem. Tratadas como texto, o git normalizaria a quebra de linha no
+# checkout e destruiria justamente o que os testes existem para verificar.
+*.ofx binary
