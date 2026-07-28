@@ -1,5 +1,9 @@
 # ofx-br
 
+[![CI](https://github.com/LeonardoChiarelli/ofx-br/actions/workflows/ci.yml/badge.svg)](https://github.com/LeonardoChiarelli/ofx-br/actions/workflows/ci.yml)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+
 Leitor de OFX que aguenta o que os bancos brasileiros exportam de verdade.
 
 Sem dependência externa, só a biblioteca padrão do Python.
