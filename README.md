@@ -4,9 +4,9 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-Leitor de OFX que aguenta o que os bancos brasileiros exportam de verdade.
+**ofx-br** é uma biblioteca Python para ler arquivos OFX de bancos brasileiros. Foi feita para quem importa extrato bancário em sistemas de conciliação e ERP. Trata os três pontos que quebram parsers genéricos: SGML com tags sem fechamento, codificação cp1252 declarada de forma contraditória e deduplicação de lançamentos por FITID. Zero dependências: só a biblioteca padrão do Python.
 
-Sem dependência externa, só a biblioteca padrão do Python.
+Última atualização: julho de 2026
 
 ```bash
 pip install ofx-br
@@ -23,13 +23,13 @@ for lancamento in doc.transactions:
 
 ---
 
-## O problema
+## Por que o OFX do banco brasileiro quebra parsers genéricos
 
 Se você já tentou ler um extrato OFX de banco brasileiro em Python, provavelmente
 esbarrou em um destes três. Nenhum é bug do banco, e nenhum é bug do seu código:
 são características do formato que as ferramentas genéricas não tratam.
 
-### 1. O OFX que os bancos daqui emitem não é XML
+### O OFX 1.x dos bancos brasileiros não é XML
 
 A versão que os bancos brasileiros exportam na prática é a 1.x, que usa uma
 sintaxe derivada de SGML. As tags folha **não têm fechamento**:
@@ -53,7 +53,7 @@ conclusão errada de que o arquivo do banco veio corrompido. O arquivo está
 xml.etree.ElementTree.ParseError: mismatched tag: line 24, column 2
 ```
 
-### 2. A codificação não é UTF-8
+### A codificação não é UTF-8, é cp1252
 
 O cabeçalho da maioria dos extratos brasileiros diz isto, que lido ao pé da letra
 é contraditório:
@@ -75,7 +75,7 @@ UnicodeDecodeError: 'utf-8' codec can't decode byte 0xc7 in position 604
 O `ofx-br` lê o cabeçalho como ASCII (ele é ASCII puro por definição), decide o
 codec a partir de `CHARSET` e só então decodifica o corpo.
 
-### 3. Reimportar o mesmo arquivo duplica lançamento
+### Reimportar o mesmo arquivo duplica lançamento
 
 Reimportação é o caso comum, não a exceção: a pessoa baixa o extrato de novo
 quando o período veio incompleto, quando o processo falhou no meio, ou quando não
@@ -91,9 +91,29 @@ novos = ofxbr.new_since(doc.transactions, ja_gravados)  # só o que falta inseri
 
 ---
 
-## Uso
+## ofx-br vs ofxparse vs ofxtools: qual usar
 
-### Ler um arquivo
+Comparação honesta. `ofxparse` e `ofxtools` são bibliotecas maduras e cobrem
+mais do padrão OFX (incluindo investimento). O `ofx-br` existe para o recorte
+brasileiro: SGML sem fechamento, cp1252 e idempotência por FITID.
+
+| Critério | ofx-br | ofxparse | ofxtools |
+|---|---|---|---|
+| SGML malformado de banco BR (tag sem fechamento, vírgula decimal, valor entre parênteses) | Caminho principal, coberto por testes de formato | Parser tolerante (BeautifulSoup), aceita SGML; desvios como vírgula decimal não são o foco | Parser próprio e mais estrito; arquivos fora da especificação podem ser rejeitados |
+| Encoding cp1252 com cabeçalho contraditório (`ENCODING:USASCII` + `CHARSET:1252`) | Detecta pelo `CHARSET` do cabeçalho; fallback cp1252 quando o cabeçalho falta | Suporte a encoding existe, mas o caso contraditório dos bancos BR historicamente exige workaround | Lê o encoding do cabeçalho conforme a especificação |
+| Deduplicação por FITID | Embutida: `dedupe`, `new_since`, `find_duplicates`, mais fingerprint opcional para FITID reemitido | Não incluída; fica por conta do chamador | Não incluída; fica por conta do chamador |
+| Dependências | Zero (só stdlib) | `beautifulsoup4`, `lxml`, `six` | Zero em runtime (só stdlib) |
+| Tipagem | Type hints completos, dataclasses com `slots`, valores sempre `Decimal` | Sem type hints públicos | Tipagem parcial; usa `Decimal` para valores |
+| Investimento (`INVSTMTRS`), OFX completo | Não implementado | Sim | Sim, cobertura ampla do padrão |
+
+Se o seu caso não esbarra nos três problemas acima, use `ofxparse` ou
+`ofxtools`. Se esbarra, o `ofx-br` resolve sem dependência externa.
+
+---
+
+## Como usar o ofx-br
+
+### Como ler um arquivo OFX em Python
 
 ```python
 import ofxbr
@@ -138,7 +158,7 @@ t.checknum
 t.is_debit, t.is_credit
 ```
 
-### Deduplicação
+### Como deduplicar lançamentos por FITID
 
 ```python
 from ofxbr import dedupe, find_duplicates, new_since
@@ -159,7 +179,7 @@ Deixe desligado quando o seu banco emitir FITID estável: com ela ligada, duas
 compras legítimas de mesmo valor, no mesmo dia e no mesmo estabelecimento seriam
 tratadas como uma só.
 
-### Linha de comando
+### Como converter OFX para CSV ou JSON na linha de comando
 
 ```bash
 ofxbr extrato.ofx                        # resumo legível
@@ -208,6 +228,79 @@ perto da virada. A decisão fica com você, que conhece a origem do arquivo.
 
 ---
 
+## Perguntas frequentes (FAQ)
+
+### Como ler um arquivo OFX em Python?
+
+Instale `ofx-br` com `pip install ofx-br` e chame `ofxbr.parse()`, que aceita
+caminho, bytes ou arquivo aberto em modo binário:
+
+```python
+import ofxbr
+doc = ofxbr.parse("extrato.ofx")
+for t in doc.transactions:
+    print(t.posted_at, t.amount, t.memo)
+```
+
+Funciona com OFX 1.x (SGML) e 2.x (XML), sem dependência externa.
+
+### Por que o OFX do meu banco não abre no parser de XML?
+
+Porque OFX 1.x não é XML: é SGML, e as tags folha não têm fechamento
+(`<TRNAMT>-150.00` sem `</TRNAMT>`). O `ElementTree` rejeita como "mismatched
+tag", mas o arquivo está íntegro. Use um parser que entenda SGML, como o
+`ofx-br`, que aceita tags fechadas e não fechadas no mesmo arquivo.
+
+### Qual encoding os bancos brasileiros usam no OFX?
+
+Na prática, cp1252 (Windows-1252). O cabeçalho costuma declarar
+`ENCODING:USASCII` junto com `CHARSET:1252`, o que é contraditório: vale o
+`CHARSET`. Ler como UTF-8 dá `UnicodeDecodeError` no primeiro acento. O
+`ofx-br` detecta o codec pelo cabeçalho e assume cp1252 quando o cabeçalho
+falta, então nunca levanta exceção de decodificação.
+
+### Como evitar lançamentos duplicados ao importar extrato OFX?
+
+Use o FITID, o identificador único que o banco atribui a cada lançamento.
+Grave-o com restrição de unicidade e filtre antes de inserir:
+
+```python
+ja_gravados = {linha.fitid for linha in meu_banco.query(...)}
+novos = ofxbr.new_since(doc.transactions, ja_gravados)
+```
+
+Isso torna a reimportação idempotente: rodar duas vezes não duplica nada.
+
+### O que é FITID no arquivo OFX?
+
+FITID (Financial Institution Transaction ID) é o identificador único que o
+banco atribui a cada lançamento dentro do `STMTTRN`. É a chave natural para
+deduplicação. Atenção: alguns bancos reemitem o FITID quando a transação passa
+de pendente para efetivada; para esse caso o `ofx-br` oferece
+`dedupe(..., use_fingerprint=True)`, que compara data, valor e histórico
+normalizado.
+
+### Como converter OFX para CSV?
+
+Pela linha de comando, sem escrever código:
+
+```bash
+ofxbr extrato.ofx --formato csv > extrato.csv
+```
+
+A saída traz banco, agência, conta, FITID, data, valor, tipo e histórico. Com
+`--dedup`, lançamentos de FITID repetido saem uma vez só. Também existe
+`--formato json` para pipelines.
+
+### O ofx-br lê extrato de investimento?
+
+Não. `INVSTMTRS` e mensagens que não sejam extrato de conta corrente
+(`STMTRS`) ou cartão de crédito (`CCSTMTRS`) não estão implementados. Para
+investimento, use `ofxtools` ou `ofxparse`, que cobrem mais do padrão OFX. O
+`ofx-br` foca no recorte de conciliação bancária brasileira.
+
+---
+
 ## Limitações, com honestidade
 
 - **As fixtures de teste são sintéticas.** Foram escritas à mão para exercitar
@@ -222,13 +315,6 @@ perto da virada. A decisão fica com você, que conhece a origem do arquivo.
   cartão não estão implementados.
 - Não faz conciliação. A biblioteca lê o extrato; casar com o seu ERP é outro
   problema, e a regra de casamento depende do seu negócio.
-
-## Alternativas
-
-`ofxparse` e `ofxtools` são bibliotecas maduras e cobrem mais do padrão OFX,
-incluindo investimento. Se o seu caso não esbarra nos três problemas do começo
-deste README, use uma delas. O `ofx-br` existe para o recorte brasileiro:
-SGML sem fechamento, cp1252 e idempotência por FITID.
 
 ## Desenvolvimento
 
