@@ -9,7 +9,7 @@ description = "Leitor de OFX que aguenta o que os bancos brasileiros exportam: S
 readme = "README.md"
 requires-python = ">=3.10"
 license = { file = "LICENSE" }
-authors = [{ name = "Leonardo Chiarelli", email = "contato@chiarelli.dev" }]
+authors = [{ name = "Leonardo Chiarelli", email = "leonardo@chiarelli.dev" }]
 keywords = ["ofx", "extrato", "bancario", "conciliacao", "brasil", "sgml", "fitid"]
 classifiers = [
   "Development Status :: 4 - Beta",
@@ -27,8 +27,8 @@ classifiers = [
 dependencies = []
 
 [project.urls]
-Homepage = "https://github.com/LeonardoChiarelli/ofx-br"
-Issues = "https://github.com/LeonardoChiarelli/ofx-br/issues"
+Homepage = "https://github.com/chiarelli-dev/ofx-br"
+Issues = "https://github.com/chiarelli-dev/ofx-br/issues"
 
 [project.scripts]
 ofxbr = "ofxbr.__main__:main"

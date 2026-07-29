@@ -1,6 +1,6 @@
 # ofx-br
 
-[![CI](https://github.com/LeonardoChiarelli/ofx-br/actions/workflows/ci.yml/badge.svg)](https://github.com/LeonardoChiarelli/ofx-br/actions/workflows/ci.yml)
+[![CI](https://github.com/chiarelli-dev/ofx-br/actions/workflows/ci.yml/badge.svg)](https://github.com/chiarelli-dev/ofx-br/actions/workflows/ci.yml)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
@@ -233,7 +233,7 @@ SGML sem fechamento, cp1252 e idempotência por FITID.
 ## Desenvolvimento
 
 ```bash
-git clone https://github.com/LeonardoChiarelli/ofx-br
+git clone https://github.com/chiarelli-dev/ofx-br
 cd ofx-br
 pip install -e ".[dev]"
 python tests/make_fixtures.py   # regera as fixtures
