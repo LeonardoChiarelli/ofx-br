@@ -237,6 +237,7 @@ caminho, bytes ou arquivo aberto em modo binário:
 
 ```python
 import ofxbr
+
 doc = ofxbr.parse("extrato.ofx")
 for t in doc.transactions:
     print(t.posted_at, t.amount, t.memo)
